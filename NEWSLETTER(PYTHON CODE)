@@ -1,0 +1,107 @@
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.keys import Keys
+import datetime
+
+#UPDATE CHROME DRIVER INFO TO WHERE YOURS IS STORED
+
+options = webdriver.ChromeOptions()
+options.add_argument("--start-maximized")
+prefs = {"profile.default_content_settings.popups": 0,
+             "download.default_directory":
+                        r"C:\Users\thegi\PycharmProjects\pythonProject1\\",
+             "directory_upgrade": True} #UPDATE THIS
+options.add_experimental_option("prefs", prefs)
+
+driver = webdriver.Chrome(executable_path=r'C:\Users\thegi\PycharmProjects\pythonProject1\chromedriver.exe', options = options) #UPDATE THIS
+
+import time
+
+#FUNCTIONALITY SCRAPING FROM TWITTER
+search_list =['Trey Lance', 'Cam Akers', 'Travis Etienne', 'Chase Claypool', 'Terrace Marshall', 'Jerry Jeudy',
+              'Henry Ruggs', 'Bryan Edwards', 'Noah Fant', '$URNM', 'Carolina Panthers'] # CAN CHANGE OR UPDATE LIST TO ANYTHING YOU WANT
+
+driver.maximize_window()
+driver.get("https://twitter.com/i/flow/login")
+time.sleep(7)
+
+elem = driver.find_element_by_xpath('//*[@id="layers"]/div[2]/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[1]/div/div[2]/label/div/div[2]/div/input')
+elem.send_keys('nflstatsdaily2')
+elem = driver.find_element_by_xpath('//*[@id="layers"]/div[2]/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[2]/div/div')
+elem.click()
+time.sleep(7)
+elem = driver.find_element_by_xpath('//*[@id="layers"]/div[2]/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[1]/div/div[2]/div/label/div/div[2]/div/input')
+elem.send_keys('DjMoore02!!')
+elem = driver.find_element_by_xpath('//*[@id="layers"]/div[2]/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[2]/div/div')
+elem.click()
+time.sleep(2)
+elem = driver.find_element_by_xpath('//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div[2]/div/div[2]/div/div/div/div[1]/div/div/div/form/div[1]/div/div/label/div[2]/div/input')
+
+x = 0
+import pandas as pd
+df = pd.DataFrame()
+df['Topic'] = []
+df['Tweet_1'] = []
+df['Tweet_2'] = []
+df['Tweet_3'] = []
+
+for items in search_list:
+    topic = search_list[x]
+    elem.send_keys(search_list[x])
+    elem.send_keys(Keys.ENTER)
+    time.sleep(3)
+    elem = driver.find_elements_by_tag_name("article")
+    time.sleep(3)
+    print(elem)
+    a = elem[0].text
+    b = elem[1].text
+    c = elem[2].text
+    df = df.append({'Topic': str(topic), 'Tweet_1': a, 'Tweet_2': b, 'Tweet_3': c}, ignore_index=True)
+    elem = driver.find_element_by_xpath('//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div/div/div[1]/div[1]/div/div/div/div/div[2]/div[2]/div/div/div/form/div[1]/div/div/label/div[2]/div/input')
+    elem.click()
+    elem = driver.find_element_by_xpath('//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div/div/div[1]/div[1]/div/div/div/div/div[2]/div[2]/div/div/div/form/div[1]/div/div/label/div[3]/div/div')
+    elem.click()
+    elem = driver.find_element_by_xpath('//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div/div/div[1]/div[1]/div/div/div/div/div[2]/div[2]/div/div/div/form/div[1]/div/div/label/div[2]/div/input')
+    x = x +1
+    time.sleep(5)
+
+print(df)
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+
+today = datetime.date.today().strftime('%m/%d/%Y')
+
+msg = MIMEMultipart()
+msg['From'] = '#INSERT YOUR SENDING EMAIL HERE'
+msg['To'] = '#INSERT YOUR TO EMAIL HERE'
+msg['Cc'] = 'CC EMAIL IF NEEDED'
+msg['Bcc'] = 'BCC EMAIL IF NEEDED'
+msg['Subject'] = f'Your News {today}' 
+html_table = df.to_html()
+message = MIMEMultipart("alternative")
+html = f'{html_table}'
+text = f"""\
+    Here's the news on your fantasy players, stocks, etc. via twitter
+    """
+part_1 = MIMEText(text, "plain")
+part_2 = MIMEText(html, "html")
+msg.attach(part_1)
+msg.attach(part_2)
+
+mailserver = smtplib.SMTP('smtp.gmail.com', 587)
+# identify ourselves to smtp gmail client
+mailserver.ehlo()
+# secure our email with tls encryption
+mailserver.starttls()
+# re-identify ourselves as an encrypted connection
+mailserver.ehlo()
+mailserver.login('#YOUR SEND EMAIL', '#YOUR PASSWORD')
+
+
+mailserver.send_message(msg)
+
+
+mailserver.quit()
